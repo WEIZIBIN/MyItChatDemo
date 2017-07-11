@@ -11,5 +11,5 @@ reply_msg_from_myself = True
 # here connect to weibo
 # properties for weibo login
 # set your weibo username and password
-WEIBO_USERNAME = 'your_weibo_username'
-WEIBO_PASSWORD = 'your_weibo_password'
+WEIBO_USERNAME = 'WEIBO_USERNAME'
+WEIBO_PASSWORD = 'WEIBO_PASSWORD'
