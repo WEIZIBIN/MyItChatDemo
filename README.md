@@ -8,7 +8,7 @@ MyItChat - A ItChat Usage Demo
 
 这是一个ItChat个人使用例子，这里使用ItChat作为微信客户端组件，可以开发出许多有趣且实用的功能，接下面会详细说明。
 
-欢迎star、fork、use、Issue：
+欢迎star、fork、use、Issue！
 
 
 依赖
