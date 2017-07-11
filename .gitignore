@@ -4,3 +4,4 @@
 #       lib.a
 #       src/internal.o
 ChatRobot_Demo/.idea/*
+ChatRobot_Demo/__pycache__/*
