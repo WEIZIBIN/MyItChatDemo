@@ -25,13 +25,13 @@ MyItChat - A ItChat Usage Demo
 ```python
 pip install itchat
 ```
-* 运行startup.py
+* 运行Demo中的startup.py
 
 
-自定义
+ChatRobot_Demo（机器人接口接入）
 ---
 
-* ./config.py
+* ChatRobot_Demo/config.py
 
     * 替换自己的图灵机器人
     ```python
@@ -68,6 +68,5 @@ pip install itchat
 ---
 
 * v1.0.0
-    * 第一次提交
-    * 接入图灵机器人
-    * 智能识别微信昵称回复
+    * 接入图灵机器人
+    * 智能识别微信昵称回复
