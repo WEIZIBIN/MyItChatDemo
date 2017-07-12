@@ -44,6 +44,7 @@ class Weibo():
             'client': 'ssologin.js(v1.4.19)',
             '_': int(time.time()*1000)
         }
+        logger.debug('attempt to pre login url : %s params : %s' % (url, params))
         response = self.s.get(url, params=params)
         regex = r'sinaSSOController.preloginCallBack\((\S+)\)'
         response_text = re.search(regex,response.text).group(1)
@@ -102,7 +103,7 @@ class Weibo():
         url = 'https://passport.weibo.com/wbsso/login'
         now = time.time()
         params = {
-            'ssosavestate': int(now) + 7 * 365 * 86400,
+            'ssosavestate': int(now) + 365 * 86400,
             'url': 'http://weibo.com/ajaxlogin.php?framelogin=1&callback=parent.sinaSSOController.feedBackUrlCallBack&sudaref=weibo.com',
             'ticket': self.ticket,
             'recode': '0'
@@ -121,11 +122,45 @@ class Weibo():
         response = self.s.get(self.redirect_url)
         logger.debug('redirect login success')
 
+    def get_msg_from_xiaoice(self, msg):
+        self.handshake()
+        self.post_msg(msg)
+        self.get_msg()
+
+    def handshake(self):
+        url = 'https://web.im.weibo.com/im/handshake'
+        now = int(time.time() * 1000)
+        params= {
+            'jsonp': 'jQuery214024520499455942235_' + str(now),
+            'message': '[{"version": "1.0", "minimumVersion": "1.0", "channel": "/meta/handshake","supportedConnectionTypes": ["callback-polling"], "advice": {"timeout": 60000, "interval": 0},"id": "2"}]',
+            '_': now
+        }
+        logger.debug('attempt to handshake url : %s params : %s' % (url, params))
+        # todo check SSL error reason
+        response = self.s.get(url, params=params,verify=False)
+        logger.debug('handshake success response : %s' % response.text)
+
+    def post_msg(self, msg):
+        url = 'http://api.weibo.com/webim/2/direct_messages/new.json?source=209678993'
+        self.s.headers.update({'Referer': 'http://api.weibo.com/chat/'})
+        logger.info('session headers update to :' % self.s.headers)
+        params = {
+            'text': urllib.parse.quote(msg),
+            'uid': '5175429989'
+        }
+        logger.debug('attempt to post url : %s params : %s' % (url, params))
+        response = self.s.post(url,data=params)
+        logger.debug('post msg success response : %s' % response.text)
+
+    def get_msg(self):
+        # todo
+        pass
 
 def main():
     log.set_logging(loggingLevel=logging.DEBUG)
     weibo = Weibo(WEIBO_USERNAME,WEIBO_PASSWORD)
     weibo.login()
+    weibo.get_msg_from_xiaoice('Hello world')
 
 if __name__ == '__main__':
     main()
