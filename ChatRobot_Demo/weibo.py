@@ -24,8 +24,11 @@ class Weibo():
         self.username = username
         self.password = password
         self.pre_login_response = None
-        self.ticket = None
-        self.redirect_url = None
+        self.ticket = None              # ticket to login
+        self.redirect_url = None        # redirect login url
+        self.jsonp = None               # handshake parameter
+        self.client_id = None           # client_id to polling WeiboIM
+        self.polling_id = 3             # IM polling_id start from 3
 
     def login(self):
         self.pre_login()
@@ -130,8 +133,9 @@ class Weibo():
     def handshake(self):
         url = 'https://web.im.weibo.com/im/handshake'
         now = int(time.time() * 1000)
+        self.jsonp = 'jQuery214024520499455942235_' + str(now)
         params= {
-            'jsonp': 'jQuery214024520499455942235_' + str(now),
+            'jsonp': self.jsonp,
             'message': '[{"version": "1.0", "minimumVersion": "1.0", "channel": "/meta/handshake","supportedConnectionTypes": ["callback-polling"], "advice": {"timeout": 60000, "interval": 0},"id": "2"}]',
             '_': now
         }
@@ -139,6 +143,11 @@ class Weibo():
         # todo check SSL error reason
         response = self.s.get(url, params=params,verify=False)
         logger.debug('handshake success response : %s' % response.text)
+        regex = r"\(\[(\S+)\]\)"
+        response_text = re.search(regex, response.text).group(1)
+        response_json = json.loads(response_text)
+        self.client_id = response_json['clientId']
+        logger.debug('handshake client id : %s' % self.client_id)
 
     def post_msg(self, msg):
         url = 'http://api.weibo.com/webim/2/direct_messages/new.json?source=209678993'
@@ -153,8 +162,21 @@ class Weibo():
         logger.debug('post msg success response : %s' % response.text)
 
     def get_msg(self):
-        # todo
-        pass
+        while True:
+            url = 'https://web.im.weibo.com/im/connect'
+            now = int(time.time() * 1000)
+            params = {
+                'jsonp': self.jsonp,
+                'message': '[{"channel":"/meta/connect","connectionType":"callback-polling","id":"%s","clientId":"%s"}]' % (
+                    self.polling_id, self.client_id),
+                '_': now
+            }
+            logger.debug('attempt to polling IM url : %s params : %s' % (url, params))
+            self.polling_id += 1
+            response = self.s.get(url, params=params,verify=True)
+            logger.debug('polling IM success response : %s' % response.text)
+            time.sleep(1)
+
 
 def main():
     log.set_logging(loggingLevel=logging.DEBUG)
