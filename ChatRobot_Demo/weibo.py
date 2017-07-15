@@ -10,17 +10,19 @@ import base64
 import urllib.parse
 from config import WEIBO_USERNAME, WEIBO_PASSWORD
 
-HEADERS = {
+headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
 }
 logger = logging.getLogger('MyItChatDemo')
+xiaoice_uid = 5175429989
+polling_wait_second = 2
 
 
 class Weibo():
 
     def __init__(self, username, password):
         self.s = requests.session()
-        self.s.headers.update(HEADERS)
+        self.s.headers.update(headers)
         self.username = username
         self.password = password
         self.pre_login_response = None
@@ -49,7 +51,7 @@ class Weibo():
         }
         logger.debug('attempt to pre login url : %s params : %s' % (url, params))
         response = self.s.get(url, params=params)
-        regex = r'sinaSSOController.preloginCallBack\((\S+)\)'
+        regex = r'sinaSSOController.preloginCallBack\(([\s\S]+)\)'
         response_text = re.search(regex,response.text).group(1)
         response_data = json.loads(response_text)
         logger.debug('pre login response : %s' % response_data)
@@ -113,7 +115,7 @@ class Weibo():
         }
         logger.debug('attempt to get login url : %s params : %s' % (url,params))
         response = self.s.get(url,params=params)
-        regex = r"sinaSSOController.feedBackUrlCallBack\((\S+)\);"
+        regex = r"sinaSSOController.feedBackUrlCallBack\(([\s\S]+)\);"
         response_text = re.search(regex, response.text).group(1)
         response_json = json.loads(response_text)
         self.redirect_url = 'https://weibo.com/%s' % response_json['userinfo']['userdomain']
@@ -127,8 +129,8 @@ class Weibo():
 
     def get_msg_from_xiaoice(self, msg):
         self.handshake()
-        self.post_msg(msg)
-        self.get_msg()
+        self.post_msg_to_xiaoice(msg)
+        return self.polling_msg_from_xiaoice()
 
     def handshake(self):
         url = 'https://web.im.weibo.com/im/handshake'
@@ -143,46 +145,56 @@ class Weibo():
         # todo check SSL error reason
         response = self.s.get(url, params=params,verify=False)
         logger.debug('handshake success response : %s' % response.text)
-        regex = r"\(\[(\S+)\]\)"
+        regex = r"\(\[([\s\S]+)\]\)"
         response_text = re.search(regex, response.text).group(1)
         response_json = json.loads(response_text)
         self.client_id = response_json['clientId']
-        logger.debug('handshake client id : %s' % self.client_id)
+        logger.debug('Weibo IM client id : %s' % self.client_id)
 
-    def post_msg(self, msg):
+    def post_msg_to_xiaoice(self, msg):
         url = 'http://api.weibo.com/webim/2/direct_messages/new.json?source=209678993'
         self.s.headers.update({'Referer': 'http://api.weibo.com/chat/'})
         logger.info('session headers update to :' % self.s.headers)
         params = {
             'text': urllib.parse.quote(msg),
-            'uid': '5175429989'
+            'uid': xiaoice_uid
         }
-        logger.debug('attempt to post url : %s params : %s' % (url, params))
+        logger.debug('attempt to post msg url : %s params : %s' % (url, params))
         response = self.s.post(url,data=params)
         logger.debug('post msg success response : %s' % response.text)
 
-    def get_msg(self):
+    def polling_msg_from_xiaoice(self):
         while True:
             url = 'https://web.im.weibo.com/im/connect'
             now = int(time.time() * 1000)
             params = {
                 'jsonp': self.jsonp,
-                'message': '[{"channel":"/meta/connect","connectionType":"callback-polling","id":"%s","clientId":"%s"}]' % (
-                    self.polling_id, self.client_id),
+                'message': '[{"channel":"/meta/connect","connectionType":"callback-polling","id":"%s","clientId":"%s"}]'
+                           % (self.polling_id, self.client_id),
                 '_': now
             }
             logger.debug('attempt to polling IM url : %s params : %s' % (url, params))
             self.polling_id += 1
-            response = self.s.get(url, params=params,verify=True)
+            response = self.s.get(url, params=params)
             logger.debug('polling IM success response : %s' % response.text)
-            time.sleep(1)
+            regex = r"\(\[{([\s\S]+)},{([\s\S]+)}\]\)"
+            match = re.search(regex, response.text)
+            if match is not None:
+                match_group = match.groups()
+                if match_group is not None and len(match_group) == 2:
+                    im_data = json.loads("{%s}" % match_group[0])
+                    if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
+                        for item in im_data['data']['items']:
+                            if item[0] == xiaoice_uid:
+                                return item[1]
+            time.sleep(polling_wait_second)
 
 
 def main():
     log.set_logging(loggingLevel=logging.DEBUG)
     weibo = Weibo(WEIBO_USERNAME,WEIBO_PASSWORD)
     weibo.login()
-    weibo.get_msg_from_xiaoice('Hello world')
+    print(weibo.get_msg_from_xiaoice('Hello world'))
 
 if __name__ == '__main__':
     main()
