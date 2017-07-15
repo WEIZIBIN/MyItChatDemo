@@ -27,10 +27,12 @@ pip install itchat
 ```
 * 运行Demo中的startup.py
 
-[ItChat](https://github.com/littlecodersh/ItChat)
+ItChat
 ---
+
 ItChat是一个开源的微信个人号接口，可以帮助我们拓展个人微信号。
-关于ItChat，你可以阅读其[文档](https://itchat.readthedocs.io/zh/latest/)或者访问[ItChat GitHub](https://github.com/littlecodersh/ItChat)
+
+关于[ItChat](https://github.com/littlecodersh/ItChat)，你可以阅读其[文档](https://itchat.readthedocs.io/zh/latest/)或者访问[ItChat on GitHub](https://github.com/littlecodersh/ItChat)
 
 
 ChatRobot_Demo（机器人接口接入）
@@ -66,7 +68,7 @@ ChatRobot_Demo（机器人接口接入）
 * 接入微软小冰机器人
 * 智能监测好友是否删除自己
 
-	持续更新开启更多功能
+持续更新开启更多功能
 
 
 版本更新
