@@ -142,7 +142,6 @@ class Weibo():
             '_': now
         }
         logger.debug('attempt to handshake url : %s params : %s' % (url, params))
-        # todo check SSL error reason
         response = self.s.get(url, params=params)
         logger.debug('handshake success response : %s' % response.text)
         regex = r"\(\[([\s\S]+)\]\)"
@@ -154,7 +153,7 @@ class Weibo():
     def post_msg_to_xiaoice(self, msg):
         url = 'http://api.weibo.com/webim/2/direct_messages/new.json?source=209678993'
         self.s.headers.update({'Referer': 'http://api.weibo.com/chat/'})
-        logger.info('session headers update to :' % self.s.headers)
+        logger.info('session headers update to : %s' % self.s.headers)
         params = {
             'text': urllib.parse.quote(msg),
             'uid': xiaoice_uid
