@@ -143,7 +143,7 @@ class Weibo():
         }
         logger.debug('attempt to handshake url : %s params : %s' % (url, params))
         # todo check SSL error reason
-        response = self.s.get(url, params=params,verify=False)
+        response = self.s.get(url, params=params)
         logger.debug('handshake success response : %s' % response.text)
         regex = r"\(\[([\s\S]+)\]\)"
         response_text = re.search(regex, response.text).group(1)
