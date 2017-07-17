@@ -19,18 +19,17 @@ polling_wait_second = 2
 
 
 class Weibo():
-
     def __init__(self, username, password):
         self.s = requests.session()
         self.s.headers.update(headers)
         self.username = username
         self.password = password
         self.pre_login_response = None
-        self.ticket = None              # ticket to login
-        self.redirect_url = None        # redirect login url
-        self.jsonp = None               # handshake parameter
-        self.client_id = None           # client_id to polling WeiboIM
-        self.polling_id = 3             # IM polling_id start from 3
+        self.ticket = None  # ticket to login
+        self.redirect_url = None  # redirect login url
+        self.jsonp = None  # handshake parameter
+        self.client_id = None  # client_id to polling WeiboIM
+        self.polling_id = 3  # IM polling_id start from 3
 
     def login(self):
         self.pre_login()
@@ -47,12 +46,12 @@ class Weibo():
             'su': self.get_encrypted_username(),
             'rsakt': 'mod',
             'client': 'ssologin.js(v1.4.19)',
-            '_': int(time.time()*1000)
+            '_': int(time.time() * 1000)
         }
         logger.debug('attempt to pre login url : %s params : %s' % (url, params))
         response = self.s.get(url, params=params)
         regex = r'sinaSSOController.preloginCallBack\(([\s\S]+)\)'
-        response_text = re.search(regex,response.text).group(1)
+        response_text = re.search(regex, response.text).group(1)
         response_data = json.loads(response_text)
         logger.debug('pre login response : %s' % response_data)
         self.pre_login_response = response_data
@@ -85,13 +84,14 @@ class Weibo():
             'url': 'http://weibo.com/ajaxlogin.php?framelogin=1&callback=parent.sinaSSOController.feedBackUrlCallBack',
             'returntype': 'TEXT'
         }
-        logger.debug('attempt to post login url : %s params : %s' % (url,params))
+        logger.debug('attempt to post login url : %s params : %s' % (url, params))
         response_json = self.s.post(url, data=params).json()
         if response_json['retcode'] == '0':
             self.ticket = response_json['ticket']
             logger.debug('%s post login success ticket : %s' % (response_json['nick'], self.ticket))
         else:
-            logger.error('post login failed retcode : %s reason: %s' % (response_json['retcode'], response_json['reason']))
+            logger.error(
+                'post login failed retcode : %s reason: %s' % (response_json['retcode'], response_json['reason']))
             raise ConnectionRefusedError
 
     def get_encrypted_password(self, servertime, nonce, pubkey):
@@ -113,8 +113,8 @@ class Weibo():
             'ticket': self.ticket,
             'recode': '0'
         }
-        logger.debug('attempt to get login url : %s params : %s' % (url,params))
-        response = self.s.get(url,params=params)
+        logger.debug('attempt to get login url : %s params : %s' % (url, params))
+        response = self.s.get(url, params=params)
         regex = r"sinaSSOController.feedBackUrlCallBack\(([\s\S]+)\);"
         response_text = re.search(regex, response.text).group(1)
         response_json = json.loads(response_text)
@@ -129,6 +129,8 @@ class Weibo():
 
     def get_msg_from_xiaoice(self, msg):
         self.handshake()
+        self.subscript_msg()
+        self.switch_to_xiaoice()
         self.post_msg_to_xiaoice(msg)
         return self.polling_msg_from_xiaoice()
 
@@ -136,7 +138,7 @@ class Weibo():
         url = 'https://web.im.weibo.com/im/handshake'
         now = int(time.time() * 1000)
         self.jsonp = 'jQuery214024520499455942235_' + str(now)
-        params= {
+        params = {
             'jsonp': self.jsonp,
             'message': '[{"version": "1.0", "minimumVersion": "1.0", "channel": "/meta/handshake","supportedConnectionTypes": ["callback-polling"], "advice": {"timeout": 60000, "interval": 0},"id": "2"}]',
             '_': now
@@ -150,6 +152,35 @@ class Weibo():
         self.client_id = response_json['clientId']
         logger.debug('Weibo IM client id : %s' % self.client_id)
 
+    def subscript_msg(self):
+        url = 'https://web.im.weibo.com/im/'
+        now = int(time.time() * 1000)
+        params = {
+            'jsonp': self.jsonp,
+            'message': ('[{"channel":"/meta/subscribe","subscription":"/im/5908081220","id":"%s","clientId":"%s"}]'
+                        % (self.polling_id, self.client_id)),
+            '_': now
+        }
+        self.polling_id += 1
+        logger.debug('attempt to subscript url : %s params : %s' % (url, params))
+        response = self.s.get(url, params=params)
+        logger.debug('subscript success response : %s' % response.text)
+
+    def switch_to_xiaoice(self):
+        url = 'https://web.im.weibo.com/im/'
+        now = int(time.time() * 1000)
+        params = {
+            'jsonp': self.jsonp,
+            'message': (
+            '[{"channel":"/im/req","data":{"cmd":"synchroniz","type":"dmread","uid":%s},"id":"%s","clientId":"%s"}]'
+            % (xiaoice_uid, self.polling_id, self.client_id)),
+            '_': now
+        }
+        self.polling_id += 1
+        logger.debug('attempt to switch to xiaoice url : %s params : %s' % (url, params))
+        response = self.s.get(url, params=params)
+        logger.debug('switch to xiaoice success response : %s' % response.text)
+
     def post_msg_to_xiaoice(self, msg):
         url = 'http://api.weibo.com/webim/2/direct_messages/new.json?source=209678993'
         self.s.headers.update({'Referer': 'http://api.weibo.com/chat/'})
@@ -158,8 +189,9 @@ class Weibo():
             'text': urllib.parse.quote(msg),
             'uid': xiaoice_uid
         }
+        self.polling_id += 1
         logger.debug('attempt to post msg url : %s params : %s' % (url, params))
-        response = self.s.post(url,data=params)
+        response = self.s.post(url, data=params)
         logger.debug('post msg success response : %s' % response.text)
 
     def polling_msg_from_xiaoice(self):
@@ -172,9 +204,10 @@ class Weibo():
                            % (self.polling_id, self.client_id),
                 '_': now
             }
-            logger.debug('attempt to polling IM url : %s params : %s' % (url, params))
             self.polling_id += 1
+            logger.debug('attempt to polling IM url : %s params : %s' % (url, params))
             response = self.s.get(url, params=params)
+            print(response.status_code)
             logger.debug('polling IM success response : %s' % response.text)
             regex = r"\(\[{([\s\S]+)},{([\s\S]+)}\]\)"
             match = re.search(regex, response.text)
@@ -185,15 +218,16 @@ class Weibo():
                     if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
                         for item in im_data['data']['items']:
                             if item[0] == xiaoice_uid:
-                                return item[1]
+                                print(item[1])
             time.sleep(polling_wait_second)
 
 
 def main():
     log.set_logging(loggingLevel=logging.DEBUG)
-    weibo = Weibo(WEIBO_USERNAME,WEIBO_PASSWORD)
+    weibo = Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
     weibo.login()
-    print(weibo.get_msg_from_xiaoice('Hello world'))
+    weibo.get_msg_from_xiaoice('你好')
+
 
 if __name__ == '__main__':
     main()
