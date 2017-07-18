@@ -218,7 +218,7 @@ class Weibo():
                     if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
                         for item in im_data['data']['items']:
                             if item[0] == xiaoice_uid:
-                                print(item[1])
+                                return item[1]
             time.sleep(polling_wait_second)
 
 
