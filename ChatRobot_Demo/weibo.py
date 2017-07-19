@@ -128,11 +128,25 @@ class Weibo():
         logger.debug('redirect login success')
 
     def get_msg_from_xiaoice(self, msg):
+        self.request_webim()
         self.handshake()
         self.subscript_msg()
         self.switch_to_xiaoice()
         self.post_msg_to_xiaoice(msg)
         return self.polling_msg_from_xiaoice()
+
+    def request_webim(self):
+        url = 'http://api.weibo.com/webim/webim_nas.json'
+        params = {
+            'source': '209678993',
+            'returntype': 'json',
+            'v': '1.1',
+            'source': '209678993',
+            'callback': 'angular.callbacks._2'
+        }
+        logger.debug('attempt to request_webim url : %s params : %s' % (url, params))
+        response = self.s.get(url, params=params)
+        logger.debug('request_webim success response : %s' % response.text)
 
     def handshake(self):
         url = 'https://web.im.weibo.com/im/handshake'
@@ -218,7 +232,7 @@ class Weibo():
                     if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
                         for item in im_data['data']['items']:
                             if item[0] == xiaoice_uid:
-                                return item[1]
+                                print(item[1])
             time.sleep(polling_wait_second)
 
 
