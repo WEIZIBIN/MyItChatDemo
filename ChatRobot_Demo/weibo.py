@@ -144,12 +144,13 @@ class Weibo():
             'source': '209678993',
             'callback': 'angular.callbacks._2'
         }
+        self.s.headers.update({'Referer': 'http://api.weibo.com/chat/'})
         logger.debug('attempt to request_webim url : %s params : %s' % (url, params))
         response = self.s.get(url, params=params)
         logger.debug('request_webim success response : %s' % response.text)
 
     def handshake(self):
-        url = 'https://web.im.weibo.com/im/handshake'
+        url = 'http://web.im.weibo.com/im/handshake'
         now = int(time.time() * 1000)
         self.jsonp = 'jQuery214024520499455942235_' + str(now)
         params = {
@@ -167,7 +168,7 @@ class Weibo():
         logger.debug('Weibo IM client id : %s' % self.client_id)
 
     def subscript_msg(self):
-        url = 'https://web.im.weibo.com/im/'
+        url = 'http://web.im.weibo.com/im/'
         now = int(time.time() * 1000)
         params = {
             'jsonp': self.jsonp,
@@ -181,7 +182,7 @@ class Weibo():
         logger.debug('subscript success response : %s' % response.text)
 
     def switch_to_xiaoice(self):
-        url = 'https://web.im.weibo.com/im/'
+        url = 'http://web.im.weibo.com/im/'
         now = int(time.time() * 1000)
         params = {
             'jsonp': self.jsonp,
@@ -210,7 +211,7 @@ class Weibo():
 
     def polling_msg_from_xiaoice(self):
         while True:
-            url = 'https://web.im.weibo.com/im/connect'
+            url = 'http://web.im.weibo.com/im/connect'
             now = int(time.time() * 1000)
             params = {
                 'jsonp': self.jsonp,
