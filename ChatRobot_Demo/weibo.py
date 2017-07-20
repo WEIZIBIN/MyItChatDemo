@@ -50,7 +50,7 @@ class Weibo():
         }
         logger.debug('attempt to pre login url : %s params : %s' % (url, params))
         response = self.s.get(url, params=params)
-        regex = r'sinaSSOController.preloginCallBack\(([\s\S]+)\)'
+        regex = 'sinaSSOController.preloginCallBack\((.*)\)'
         response_text = re.search(regex, response.text).group(1)
         response_data = json.loads(response_text)
         logger.debug('pre login response : %s' % response_data)
@@ -115,7 +115,7 @@ class Weibo():
         }
         logger.debug('attempt to get login url : %s params : %s' % (url, params))
         response = self.s.get(url, params=params)
-        regex = r"sinaSSOController.feedBackUrlCallBack\(([\s\S]+)\);"
+        regex = 'sinaSSOController.feedBackUrlCallBack\((.*)\);'
         response_text = re.search(regex, response.text).group(1)
         response_json = json.loads(response_text)
         self.redirect_url = 'https://weibo.com/%s' % response_json['userinfo']['userdomain']
@@ -161,7 +161,7 @@ class Weibo():
         logger.debug('attempt to handshake url : %s params : %s' % (url, params))
         response = self.s.get(url, params=params)
         logger.debug('handshake success response : %s' % response.text)
-        regex = r"\(\[([\s\S]+)\]\)"
+        regex = '\(\[(.*)\]\)'
         response_text = re.search(regex, response.text).group(1)
         response_json = json.loads(response_text)
         self.client_id = response_json['clientId']
@@ -224,28 +224,33 @@ class Weibo():
             response = self.s.get(url, params=params)
             print(response.status_code)
             logger.debug('polling IM success response : %s' % response.text)
-            regex = r"\(\[([\s\S]+)\]\)"
+            regex = r'\(\[[{(.*)}]*\]\)'
             match = re.search(regex, response.text)
-            if match is not None:
-                str = match.group(1)
-                datas = str.split(',')
-                im_datas = []
-                for data in datas:
-                    print(data)
-                    im_datas.append(json.load(data))
-                for im_data in im_datas:
-                    if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
-                        for item in im_data['data']['items']:
-                            if item[0] == xiaoice_uid:
-                                print(item[1])
+            print(match.groups())
+            # if match is not None:
+            #     str = match.group(1)
+            #     datas = str.split(',')
+            #     im_datas = []
+            #     for data in datas:
+            #         print(data)
+            #         im_datas.append(json.load(data))
+            #     for im_data in im_datas:
+            #         if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
+            #             for item in im_data['data']['items']:
+            #                 if item[0] == xiaoice_uid:
+            #                     print(item[1])
             time.sleep(polling_wait_second)
 
 
 def main():
-    log.set_logging(loggingLevel=logging.DEBUG)
-    weibo = Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
-    weibo.login()
-    weibo.get_msg_from_xiaoice('你好')
+    # log.set_logging(loggingLevel=logging.DEBUG)
+    # weibo = Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
+    # weibo.login()
+    # weibo.get_msg_from_xiaoice('你好')
+    str = '([{"data":{"lastmid":4131597492035838,"type":"unreader","items":{"total":6,"5175429989":6},"dm_isRemind":0},"channel":"/im/5908081220"},{"data":{"ret":0},"channel":"/im/5908081220","id":"4"},{"data":{"type":"synchroniz","ret":0},"channel":"/im/5908081220","id":"4"},{"advice":{"interval":0,"timeout":170000,"reconnect":"retry"},"channel":"/meta/connect","id":"6","successful":true}])'
+    regex = "sinaSSOController.preloginCallBack\((.*)\)"
+    match = re.search(regex, str)
+    print(match.groups())
 
 
 if __name__ == '__main__':
