@@ -224,12 +224,16 @@ class Weibo():
             response = self.s.get(url, params=params)
             print(response.status_code)
             logger.debug('polling IM success response : %s' % response.text)
-            regex = r"\(\[{([\s\S]+)},{([\s\S]+)}\]\)"
+            regex = r"\(\[([\s\S]+)\]\)"
             match = re.search(regex, response.text)
             if match is not None:
-                match_group = match.groups()
-                if match_group is not None and len(match_group) == 2:
-                    im_data = json.loads("{%s}" % match_group[0])
+                str = match.group(1)
+                datas = str.split(',')
+                im_datas = []
+                for data in datas:
+                    print(data)
+                    im_datas.append(json.load(data))
+                for im_data in im_datas:
                     if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
                         for item in im_data['data']['items']:
                             if item[0] == xiaoice_uid:
