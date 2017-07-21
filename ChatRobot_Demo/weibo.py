@@ -29,6 +29,7 @@ class Weibo():
         self.redirect_url = None  # redirect login url
         self.jsonp = None  # handshake parameter
         self.client_id = None  # client_id to polling WeiboIM
+        self.im_ready = False
         self.polling_id = 3  # IM polling_id start from 3
 
     def login(self):
@@ -127,11 +128,17 @@ class Weibo():
         response = self.s.get(self.redirect_url)
         logger.debug('redirect login success')
 
+    def init_im(self):
+        if not self.im_ready:
+            self.request_webim()
+            self.handshake()
+            self.subscript_msg()
+            self.switch_to_xiaoice()
+        logger.info('Weibo IM init success')
+        self.im_ready = True
+
     def get_msg_from_xiaoice(self, msg):
-        self.request_webim()
-        self.handshake()
-        self.subscript_msg()
-        self.switch_to_xiaoice()
+        self.init_im()
         self.post_msg_to_xiaoice(msg)
         return self.polling_msg_from_xiaoice()
 
@@ -222,35 +229,60 @@ class Weibo():
             self.polling_id += 1
             logger.debug('attempt to polling IM url : %s params : %s' % (url, params))
             response = self.s.get(url, params=params)
-            print(response.status_code)
             logger.debug('polling IM success response : %s' % response.text)
-            regex = r'\(\[[{(.*)}]*\]\)'
+            regex = '\(\[(.*)\]\)'
             match = re.search(regex, response.text)
-            print(match.groups())
-            # if match is not None:
-            #     str = match.group(1)
-            #     datas = str.split(',')
-            #     im_datas = []
-            #     for data in datas:
-            #         print(data)
-            #         im_datas.append(json.load(data))
-            #     for im_data in im_datas:
-            #         if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
-            #             for item in im_data['data']['items']:
-            #                 if item[0] == xiaoice_uid:
-            #                     print(item[1])
+            if match is not None:
+                response_content = match.group(1)
+                im_datas = split_data_from_polling_response(response_content)
+                for im_data in im_datas:
+                    if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
+                        for item in im_data['data']['items']:
+                            if item[0] == xiaoice_uid:
+                                print(item[1])
             time.sleep(polling_wait_second)
 
 
+def split_data_from_polling_response(response_content):
+    """
+    example response text:
+        {"data":{"lastmid":4131597492035838,"type":"unreader","items":{"total":6,"5175429989":6},"dm_isRemind":0},"channel":"/im/5908081220"},
+        {"data":{"ret":0},"channel":"/im/5908081220","id":"4"},
+        {"data":{"type":"synchroniz","ret":0},"channel":"/im/5908081220","id":"4"},
+        {"advice":{"interval":0,"timeout":170000,"reconnect":"retry"},"channel":"/meta/connect","id":"6","successful":true}
+    split each json string to list [{data1:...}, {data:...}, ...]
+    :param response_content:
+    :return:a list content splited json
+    """
+    datas = []
+    # scan response_content
+    left_parenthesis_count = 0
+    right_parenthesis_count = 0
+    data = ''
+    is_start = False
+    for char in response_content:
+        if char == '{':
+            is_start = True
+            left_parenthesis_count+=1
+        if char == '}':
+            right_parenthesis_count+=1
+        if is_start:
+            data += char
+            if left_parenthesis_count == right_parenthesis_count:
+                data_json = json.loads(data)
+                datas.append(data_json)
+                data = ''
+                left_parenthesis_count = 0
+                right_parenthesis_count = 0
+                is_start = False
+    return datas
+
+
 def main():
-    # log.set_logging(loggingLevel=logging.DEBUG)
-    # weibo = Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
-    # weibo.login()
-    # weibo.get_msg_from_xiaoice('你好')
-    str = '([{"data":{"lastmid":4131597492035838,"type":"unreader","items":{"total":6,"5175429989":6},"dm_isRemind":0},"channel":"/im/5908081220"},{"data":{"ret":0},"channel":"/im/5908081220","id":"4"},{"data":{"type":"synchroniz","ret":0},"channel":"/im/5908081220","id":"4"},{"advice":{"interval":0,"timeout":170000,"reconnect":"retry"},"channel":"/meta/connect","id":"6","successful":true}])'
-    regex = "sinaSSOController.preloginCallBack\((.*)\)"
-    match = re.search(regex, str)
-    print(match.groups())
+    log.set_logging(loggingLevel=logging.DEBUG)
+    weibo = Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
+    weibo.login()
+    weibo.get_msg_from_xiaoice('你好')
 
 
 if __name__ == '__main__':
