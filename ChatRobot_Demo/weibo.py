@@ -8,6 +8,7 @@ import logging
 import log
 import base64
 import urllib.parse
+import threading
 from config import WEIBO_USERNAME, WEIBO_PASSWORD
 
 headers = {
@@ -134,13 +135,9 @@ class Weibo():
             self.handshake()
             self.subscript_msg()
             self.switch_to_xiaoice()
+            threading.Thread(target=self.polling_msg_from_xiaoice).start()
         logger.info('Weibo IM init success')
         self.im_ready = True
-
-    def get_msg_from_xiaoice(self, msg):
-        self.init_im()
-        self.post_msg_to_xiaoice(msg)
-        return self.polling_msg_from_xiaoice()
 
     def request_webim(self):
         url = 'http://api.weibo.com/webim/webim_nas.json'
@@ -263,9 +260,9 @@ def split_data_from_polling_response(response_content):
     for char in response_content:
         if char == '{':
             is_start = True
-            left_parenthesis_count+=1
+            left_parenthesis_count += 1
         if char == '}':
-            right_parenthesis_count+=1
+            right_parenthesis_count += 1
         if is_start:
             data += char
             if left_parenthesis_count == right_parenthesis_count:
@@ -282,7 +279,7 @@ def main():
     log.set_logging(loggingLevel=logging.DEBUG)
     weibo = Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
     weibo.login()
-    weibo.get_msg_from_xiaoice('你好')
+    weibo.init_im()
 
 
 if __name__ == '__main__':
