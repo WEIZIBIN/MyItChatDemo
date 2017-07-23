@@ -16,7 +16,7 @@ headers = {
 }
 logger = logging.getLogger('MyItChatDemo')
 xiaoice_uid = 5175429989
-polling_wait_second = 2
+polling_wait_second = 0
 
 
 class Weibo():
@@ -28,9 +28,9 @@ class Weibo():
         self.pre_login_response = None
         self.ticket = None  # ticket to login
         self.redirect_url = None  # redirect login url
-        self.jsonp = None  # handshake parameter
+        self.jsonp = None  # im handshake parameter
         self.client_id = None  # client_id to polling WeiboIM
-        self.im_ready = False
+        self.im_ready = False # Is IM ready to send or receive msg
         self.polling_id = 3  # IM polling_id start from 3
 
     def login(self):
@@ -129,14 +129,14 @@ class Weibo():
         response = self.s.get(self.redirect_url)
         logger.debug('redirect login success')
 
-    def init_im(self):
+    def im_init(self):
         if not self.im_ready:
             self.request_webim()
             self.handshake()
             self.subscript_msg()
             self.switch_to_xiaoice()
             threading.Thread(target=self.polling_msg_from_xiaoice).start()
-        logger.info('Weibo IM init success')
+            logger.info('Weibo IM init success')
         self.im_ready = True
 
     def request_webim(self):
@@ -242,14 +242,15 @@ class Weibo():
 
 def split_data_from_polling_response(response_content):
     """
+    this function helps to split IM data from multiple json response
     example response text:
         {"data":{"lastmid":4131597492035838,"type":"unreader","items":{"total":6,"5175429989":6},"dm_isRemind":0},"channel":"/im/5908081220"},
         {"data":{"ret":0},"channel":"/im/5908081220","id":"4"},
         {"data":{"type":"synchroniz","ret":0},"channel":"/im/5908081220","id":"4"},
         {"advice":{"interval":0,"timeout":170000,"reconnect":"retry"},"channel":"/meta/connect","id":"6","successful":true}
-    split each json string to list [{data1:...}, {data:...}, ...]
+    split each json string and convert to dict object, add all to list [{data1:...}, {data:...}, ...]
     :param response_content:
-    :return:a list content splited json
+    :return:a list of dict object split from response_content
     """
     datas = []
     # scan response_content
@@ -279,7 +280,10 @@ def main():
     log.set_logging(loggingLevel=logging.DEBUG)
     weibo = Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
     weibo.login()
-    weibo.init_im()
+    weibo.im_init()
+    weibo.post_msg_to_xiaoice('你好')
+    weibo.post_msg_to_xiaoice('你好')
+    weibo.post_msg_to_xiaoice('你好')
 
 
 if __name__ == '__main__':
