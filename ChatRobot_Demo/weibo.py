@@ -203,6 +203,10 @@ class Weibo():
         response = self.s.get(url, params=params)
         logger.debug('switch to xiaoice success response : %s' % response.text)
 
+    def get_msg_from_xiaoice(self, msg):
+        self.post_msg_to_xiaoice(msg)
+        return self.msg_queue.get()
+
     def post_msg_to_xiaoice(self, msg):
         url = 'http://api.weibo.com/webim/2/direct_messages/new.json?source=209678993'
         self.s.headers.update({'Referer': 'http://api.weibo.com/chat/'})
@@ -239,7 +243,7 @@ class Weibo():
                     if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
                         for item in im_data['data']['items']:
                             if item[0] == xiaoice_uid:
-                                print(item[1])
+                                self.msg_queue.put(item[1])
             time.sleep(polling_wait_second)
 
     @staticmethod
@@ -284,9 +288,7 @@ def main():
     weibo = Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
     weibo.login()
     weibo.im_init()
-    weibo.post_msg_to_xiaoice('你好')
-    weibo.post_msg_to_xiaoice('你好')
-    weibo.post_msg_to_xiaoice('你好')
+    print(weibo.get_msg_from_xiaoice('我爱你'))
 
 
 if __name__ == '__main__':
