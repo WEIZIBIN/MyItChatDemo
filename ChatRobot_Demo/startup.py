@@ -5,15 +5,16 @@ import log
 from config import friend_wechat_remarknames,reply_msg_from_myself
 
 logger = logging.getLogger('MyItChatDemo')
-reply_friends=[]
+reply_friends = []
 
 
 @itchat.msg_register(itchat.content.TEXT)
 def msg_reply(msg):
+    print(msg)
     content = msg['Text']
     from_user_name = msg['FromUserName']
     from_user_remarkname = msg['User']['RemarkName']
-    logger.info('receive text : {content} from remarkName:{FromUserRemarkName} userName:{username} '
+    logger.info('receive text : {content} from remarkName:{FromUserRemarkName} to userName:{username} '
         .format(content=content,FromUserRemarkName=from_user_remarkname,username=from_user_name))
     try:
         reply_content = robot.get_reply_msg(content, from_user_name)
@@ -30,7 +31,7 @@ def msg_reply(msg):
 def msg_reply(msg):
     from_user_name = msg['FromUserName']
     from_user_remarkname = msg['User']['RemarkName']
-    logger.info('receive unsupported content from remarkName:{FromUserRemarkName} userName:{username} '
+    logger.info('receive unsupported content from remarkName:{FromUserRemarkName} from userName:{username} '
                 .format(FromUserRemarkName=from_user_remarkname, username=from_user_name))
     if is_auto_replay(from_user_name):
         return '好好聊天，不要发表情、语音……'
