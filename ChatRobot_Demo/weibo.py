@@ -9,6 +9,7 @@ import log
 import base64
 import urllib.parse
 import threading
+import queue
 from config import WEIBO_USERNAME, WEIBO_PASSWORD
 
 headers = {
@@ -31,6 +32,7 @@ class Weibo():
         self.jsonp = None  # im handshake parameter
         self.client_id = None  # client_id to polling WeiboIM
         self.im_ready = False # Is IM ready to send or receive msg
+        self.msg_queue = None
         self.polling_id = 3  # IM polling_id start from 3
 
     def login(self):
@@ -135,6 +137,7 @@ class Weibo():
             self.handshake()
             self.subscript_msg()
             self.switch_to_xiaoice()
+            self.msg_queue = queue.Queue(10)
             threading.Thread(target=self.polling_msg_from_xiaoice).start()
             logger.info('Weibo IM init success')
         self.im_ready = True
@@ -231,7 +234,7 @@ class Weibo():
             match = re.search(regex, response.text)
             if match is not None:
                 response_content = match.group(1)
-                im_datas = split_data_from_polling_response(response_content)
+                im_datas = Weibo.split_data_from_polling_response(response_content)
                 for im_data in im_datas:
                     if 'data' in im_data and 'type' in im_data['data'] and im_data['data']['type'] == 'msg':
                         for item in im_data['data']['items']:
@@ -239,41 +242,41 @@ class Weibo():
                                 print(item[1])
             time.sleep(polling_wait_second)
 
-
-def split_data_from_polling_response(response_content):
-    """
-    this function helps to split IM data from multiple json response
-    example response text:
-        {"data":{"lastmid":4131597492035838,"type":"unreader","items":{"total":6,"5175429989":6},"dm_isRemind":0},"channel":"/im/5908081220"},
-        {"data":{"ret":0},"channel":"/im/5908081220","id":"4"},
-        {"data":{"type":"synchroniz","ret":0},"channel":"/im/5908081220","id":"4"},
-        {"advice":{"interval":0,"timeout":170000,"reconnect":"retry"},"channel":"/meta/connect","id":"6","successful":true}
-    split each json string and convert to dict object, add all to list [{data1:...}, {data:...}, ...]
-    :param response_content:
-    :return:a list of dict object split from response_content
-    """
-    datas = []
-    # scan response_content
-    left_parenthesis_count = 0
-    right_parenthesis_count = 0
-    data = ''
-    is_start = False
-    for char in response_content:
-        if char == '{':
-            is_start = True
-            left_parenthesis_count += 1
-        if char == '}':
-            right_parenthesis_count += 1
-        if is_start:
-            data += char
-            if left_parenthesis_count == right_parenthesis_count:
-                data_json = json.loads(data)
-                datas.append(data_json)
-                data = ''
-                left_parenthesis_count = 0
-                right_parenthesis_count = 0
-                is_start = False
-    return datas
+    @staticmethod
+    def split_data_from_polling_response(response_content):
+        """
+        this function helps to split IM data from multiple json response
+        example response text:
+            {"data":{"lastmid":4131597492035838,"type":"unreader","items":{"total":6,"5175429989":6},"dm_isRemind":0},"channel":"/im/5908081220"},
+            {"data":{"ret":0},"channel":"/im/5908081220","id":"4"},
+            {"data":{"type":"synchroniz","ret":0},"channel":"/im/5908081220","id":"4"},
+            {"advice":{"interval":0,"timeout":170000,"reconnect":"retry"},"channel":"/meta/connect","id":"6","successful":true}
+        split each json string and convert to dict object, add all to list [{data1:...}, {data:...}, ...]
+        :param response_content:
+        :return:a list of dict object split from response_content
+        """
+        datas = []
+        # scan response_content
+        left_parenthesis_count = 0
+        right_parenthesis_count = 0
+        data = ''
+        is_start = False
+        for char in response_content:
+            if char == '{':
+                is_start = True
+                left_parenthesis_count += 1
+            if char == '}':
+                right_parenthesis_count += 1
+            if is_start:
+                data += char
+                if left_parenthesis_count == right_parenthesis_count:
+                    data_json = json.loads(data)
+                    datas.append(data_json)
+                    data = ''
+                    left_parenthesis_count = 0
+                    right_parenthesis_count = 0
+                    is_start = False
+        return datas
 
 
 def main():
