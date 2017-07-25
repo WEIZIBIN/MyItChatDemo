@@ -49,6 +49,7 @@ class Weibo():
             'callback': 'sinaSSOController.preloginCallBack',
             'su': self.get_encrypted_username(),
             'rsakt': 'mod',
+            'checkpin': '1',
             'client': 'ssologin.js(v1.4.19)',
             '_': int(time.time() * 1000)
         }
@@ -88,6 +89,16 @@ class Weibo():
             'url': 'http://weibo.com/ajaxlogin.php?framelogin=1&callback=parent.sinaSSOController.feedBackUrlCallBack',
             'returntype': 'TEXT'
         }
+
+        # get captcha if needs
+        if self.pre_login_response['showpin'] == 1:
+            url = 'http://login.sina.com.cn/cgi/pin.php?r=%d&s=0&p=%s' % (servertime, self.pre_login_response['pcid'])
+            with open('captcha.jpeg', 'wb') as file_out:
+                file_out.write(self.s.get(url).content)
+            code = input('（新浪微博登录）请输入验证码：')
+            params['pcid'] = self.pre_login_response['pcid']
+            params['door'] = code
+
         logger.debug('attempt to post login url : %s params : %s' % (url, params))
         response_json = self.s.post(url, data=params).json()
         if response_json['retcode'] == '0':
