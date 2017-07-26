@@ -32,6 +32,7 @@ class Weibo():
         self.jsonp = None  # im handshake parameter
         self.client_id = None  # client_id to polling WeiboIM
         self.im_ready = False # Is IM ready to send or receive msg
+        self.im_channel = None # IM channel to subscribe
         self.msg_queue = None
         self.polling_id = 3  # IM polling_id start from 3
 
@@ -146,7 +147,7 @@ class Weibo():
         if not self.im_ready:
             self.request_webim()
             self.handshake()
-            self.subscript_msg()
+            self.subscribe_msg()
             self.switch_to_xiaoice()
             self.msg_queue = queue.Queue(10)
             threading.Thread(target=self.polling_msg_from_xiaoice).start()
@@ -166,6 +167,11 @@ class Weibo():
         logger.debug('attempt to request_webim url : %s params : %s' % (url, params))
         response = self.s.get(url, params=params)
         logger.debug('request_webim success response : %s' % response.text)
+        regex = 'angular.callbacks._2\((.*)\);'
+        response_text = re.search(regex, response.text).group(1)
+        response_json = json.loads(response_text)
+        self.im_channel = response_json['channel']
+        logger.debug('im subscribe channel : %s' % self.im_channel)
 
     def handshake(self):
         url = 'http://web.im.weibo.com/im/handshake'
@@ -185,19 +191,19 @@ class Weibo():
         self.client_id = response_json['clientId']
         logger.debug('Weibo IM client id : %s' % self.client_id)
 
-    def subscript_msg(self):
+    def subscribe_msg(self):
         url = 'http://web.im.weibo.com/im/'
         now = int(time.time() * 1000)
         params = {
             'jsonp': self.jsonp,
-            'message': ('[{"channel":"/meta/subscribe","subscription":"/im/5908081220","id":"%s","clientId":"%s"}]'
-                        % (self.polling_id, self.client_id)),
+            'message': ('[{"channel":"/meta/subscribe","subscription":"%s","id":"%s","clientId":"%s"}]'
+                        % (self.im_channel, self.polling_id, self.client_id)),
             '_': now
         }
         self.polling_id += 1
-        logger.debug('attempt to subscript url : %s params : %s' % (url, params))
+        logger.debug('attempt to subscribe url : %s params : %s' % (url, params))
         response = self.s.get(url, params=params)
-        logger.debug('subscript success response : %s' % response.text)
+        logger.debug('subscribe success response : %s' % response.text)
 
     def switch_to_xiaoice(self):
         url = 'http://web.im.weibo.com/im/'
@@ -220,8 +226,6 @@ class Weibo():
 
     def post_msg_to_xiaoice(self, msg):
         url = 'http://api.weibo.com/webim/2/direct_messages/new.json?source=209678993'
-        self.s.headers.update({'Referer': 'http://api.weibo.com/chat/'})
-        logger.info('session headers update to : %s' % self.s.headers)
         params = {
             'text': urllib.parse.quote(msg),
             'uid': xiaoice_uid
