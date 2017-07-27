@@ -1,7 +1,7 @@
 import requests
 import logging
 import weibo
-from config import tuling_apiUrl, tuling_key, WEIBO_USERNAME, WEIBO_PASSWORD, ROBOT_TULING, ROBOT_XIAOICE
+from config import tuling_apiUrl, tuling_key, weibo_username, weibo_password, robot_tuling, robot_xiaoice
 
 logger = logging.getLogger('MyItChatDemo.robot')
 weibo_instance = None
@@ -26,12 +26,12 @@ def get_reply_from_xiaoice(info, userid):
 
 
 # set reply robot tuling
-if ROBOT_TULING:
+if robot_tuling:
     get_reply_msg = get_reply_from_tuling
 
 # set reply robot xiaoice
-if ROBOT_XIAOICE:
-    weibo_instance = weibo.Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
+if robot_xiaoice:
+    weibo_instance = weibo.Weibo(weibo_username, weibo_password)
     weibo_instance.login()
     weibo_instance.im_init()
     get_reply_msg = get_reply_from_xiaoice

@@ -10,7 +10,7 @@ import base64
 import urllib.parse
 import threading
 import queue
-from config import WEIBO_USERNAME, WEIBO_PASSWORD
+from config import weibo_username, weibo_password
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
@@ -300,7 +300,7 @@ class Weibo():
 
 def main():
     log.set_logging(loggingLevel=logging.DEBUG)
-    weibo = Weibo(WEIBO_USERNAME, WEIBO_PASSWORD)
+    weibo = Weibo(weibo_username, weibo_password)
     weibo.login()
     weibo.im_init()
     print(weibo.get_msg_from_xiaoice('我爱你'))
