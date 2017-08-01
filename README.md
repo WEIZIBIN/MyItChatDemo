@@ -1,8 +1,8 @@
 
 MyItChat - A ItChat Usage Demo
 ===
-[![MyItChatDeomo](https://img.shields.io/badge/MyItChatDemo-v1.0.0-brightgreen.svg)]()
-[![ItChat](https://img.shields.io/badge/ItChat-v1.3.8-brightgreen.svg)](https://github.com/littlecodersh/ItChat)
+[![MyItChatDeomo](https://img.shields.io/badge/MyItChatDemo-v1.1.0-brightgreen.svg)]()
+[![ItChat](https://img.shields.io/badge/ItChat-v1.3.7-brightgreen.svg)](https://github.com/littlecodersh/ItChat)
 [![Python](https://img.shields.io/badge/Python-v3.6-brightgreen.svg)](https://www.python.org/)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)]()
 
@@ -15,7 +15,7 @@ MyItChat - A ItChat Usage Demo
 ---
 
 * Python3
-* ItChat(v1.3.8)
+* ItChat(v1.3.7)
 
 
 快速开始
@@ -44,6 +44,13 @@ ChatRobot_Demo（机器人接口接入）
     ```python
     tuling_apiUrl = 'tuling_api'
     tuling_key = 'your_tuling_key'
+    robot_tuling = True
+    ```
+    * 替换自己的微软小冰机器人
+    ```python
+    weibo_username = 'weibo_username'
+    weibo_password = 'weibo_password'
+    robot_xiaoice = True
     ```
     * 自定义回复的微信昵称（只回复昵称为数组中的消息）
     ```python
@@ -60,12 +67,13 @@ ChatRobot_Demo（机器人接口接入）
 
 * 接入图灵机器人
 * 智能识别微信昵称回复
+* 接入微软小冰机器人
 
 
 待实现功能
 ---
 
-* 接入微软小冰机器人
+* 优化微软小冰机器人的稳定性
 * 智能监测好友是否删除自己
 
 持续更新开启更多功能
@@ -73,6 +81,9 @@ ChatRobot_Demo（机器人接口接入）
 
 版本更新
 ---
+
+* v1.1.0
+    * 接入微软小冰机器人
 
 * v1.0.0
     * 接入图灵机器人
